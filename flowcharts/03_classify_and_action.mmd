@@ -1,0 +1,23 @@
+flowchart TD
+    A([START ClassifyPriority]) --> B{waste type = Hazardous?}
+    B -- Yes --> U[priority = URGENT]
+    B -- No --> C{score >= 8?}
+    C -- Yes --> U
+    C -- No --> D{score >= 4?}
+    D -- Yes --> H[priority = HIGH]
+    D -- No --> R[priority = ROUTINE]
+    U --> U1[action = Send truck within 24 hours<br/>and alert ward councillor]
+    H --> H1[action = Collect within 3 days]
+    R --> R1[action = Add to next weekly round]
+    U1 --> T
+    H1 --> T
+    R1 --> T
+    T{waste type?}
+    T -- Plastic --> P[Add: separate plastics for recycling]
+    T -- Market/Organic --> O[Add: send for composting]
+    T -- Hazardous --> Z[Add: crew must wear protective gear]
+    T -- Household --> E
+    P --> E
+    O --> E
+    Z --> E
+    E([RETURN priority and action])

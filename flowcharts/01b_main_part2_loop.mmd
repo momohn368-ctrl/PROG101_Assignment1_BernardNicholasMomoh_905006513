@@ -1,0 +1,22 @@
+flowchart TD
+    X((B)) --> K{i <= numReports?}
+    K -- Yes --> L[/Input report details/]
+    L --> M[["CalculatePriorityScore"]]
+    M --> N[["ClassifyPriority"]]
+    N --> O[["RecommendAction"]]
+    O --> P[/Display report/]
+    P --> Q{priority =<br/>URGENT?}
+    Q -- Yes --> R[urgentCount + 1]
+    Q -- No --> S{priority =<br/>HIGH?}
+    S -- Yes --> T[highCount + 1]
+    S -- No --> U[routineCount + 1]
+    R --> V[Add load units and days<br/>i = i + 1]
+    T --> V
+    U --> V
+    V --> K
+    K -- No --> W[trucks = CEILING units / 10<br/>avgDays = totalDays / numReports]
+    W --> Y[/Display daily summary/]
+    Y --> Z{urgentCount > 0?}
+    Z -- Yes --> Z1[/Display WARNING/]
+    Z -- No --> END([STOP])
+    Z1 --> END

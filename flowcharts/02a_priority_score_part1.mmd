@@ -1,0 +1,13 @@
+flowchart TD
+    A([START CalculatePriorityScore]) --> B[score = 0]
+    B --> C{days >= 7?}
+    C -- Yes --> C1[score + 3] --> D
+    C -- No --> C2{days >= 3?}
+    C2 -- Yes --> C3[score + 2] --> D
+    C2 -- No --> D
+    D{pile = Large?}
+    D -- Yes --> D1[score + 2] --> X
+    D -- No --> D2{pile = Medium?}
+    D2 -- Yes --> D3[score + 1] --> X
+    D2 -- No --> X
+    X((A))

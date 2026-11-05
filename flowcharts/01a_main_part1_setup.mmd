@@ -1,0 +1,11 @@
+flowchart TD
+    A([START]) --> B[Set constants]
+    B --> C[/Input month/]
+    C --> D{month between<br/>1 and 12?}
+    D -- No --> E[/Display error/] --> C
+    D -- Yes --> F[["rainySeason =<br/>IsRainySeason(month)"]]
+    F --> G[/Input numReports/]
+    G --> H{numReports<br/>at least 1?}
+    H -- No --> I[/Display error/] --> G
+    H -- Yes --> J[Set all counters to 0<br/>i = 1]
+    J --> X((B))

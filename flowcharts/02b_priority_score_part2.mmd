@@ -1,0 +1,14 @@
+flowchart TD
+    X((A)) --> E{near drain?}
+    E -- Yes --> E1[score + 2] --> F
+    E -- No --> F
+    F{near school, market<br/>or health centre?}
+    F -- Yes --> F1[score + 2] --> G
+    F -- No --> G
+    G{waste type =<br/>Hazardous?}
+    G -- Yes --> G1[score + 3] --> H
+    G -- No --> H
+    H{rainy season AND<br/>near drain?}
+    H -- Yes --> H1[score + 1] --> I
+    H -- No --> I
+    I([RETURN score])

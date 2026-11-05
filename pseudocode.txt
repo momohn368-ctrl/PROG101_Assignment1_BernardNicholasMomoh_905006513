@@ -1,0 +1,249 @@
+=====================================================================
+ WASTEWATCH SL - COMMUNITY WASTE REPORTING AND COLLECTION PRIORITY SYSTEM
+ PSEUDOCODE
+ PROG101 Assignment 1 - Principles of Programming Logic and Design
+=====================================================================
+
+// ---------------------------------------------------------------
+// CONSTANTS (fixed values that never change while the system runs)
+// ---------------------------------------------------------------
+CONSTANT RAINY_START       = 5     // May
+CONSTANT RAINY_END         = 10    // October
+CONSTANT WARNING_DAYS      = 3     // days uncollected before a warning
+CONSTANT CRITICAL_DAYS     = 7     // days uncollected that are critical
+CONSTANT URGENT_SCORE      = 8     // total points for URGENT priority
+CONSTANT HIGH_SCORE        = 4     // total points for HIGH priority
+CONSTANT SMALL_UNITS       = 1     // load units for a small pile (a few bags)
+CONSTANT MEDIUM_UNITS      = 3     // load units for a medium pile (cart load)
+CONSTANT LARGE_UNITS       = 8     // load units for a large pile (truck load)
+CONSTANT TRUCK_CAPACITY    = 10    // load units one truck can carry per trip
+
+// Waste type codes: 1 = Household, 2 = Plastic, 3 = Market/Organic, 4 = Hazardous
+// Volume codes    : 1 = Small,     2 = Medium,  3 = Large
+
+
+// ---------------------------------------------------------------
+// MODULE 1: MAIN PROGRAM (controls the whole system)
+// ---------------------------------------------------------------
+MODULE Main()
+    DECLARE month, numReports                         AS Integer
+    DECLARE rainySeason                               AS Boolean
+    DECLARE urgentCount, highCount, routineCount      AS Integer = 0
+    DECLARE totalUnits, totalDays                     AS Integer = 0
+
+    DECLARE reportID, community                       AS String
+    DECLARE wasteType, volumeCode, daysUncollected    AS Integer
+    DECLARE nearDrain, nearPublicPlace                AS Boolean
+    DECLARE score                                     AS Integer
+    DECLARE priority, action                          AS String
+
+    DISPLAY "=== WASTEWATCH SL: WASTE COLLECTION PRIORITY SYSTEM ==="
+    month       = GetValidInteger("Enter current month (1-12): ", 1, 12)
+    rainySeason = IsRainySeason(month)
+    numReports  = GetValidInteger("How many waste reports today? ", 1, 1000)
+
+    // REPETITION: process every report one by one
+    FOR i = 1 TO numReports
+        DISPLAY "--- Report ", i, " of ", numReports, " ---"
+        INPUT reportID, community
+        wasteType       = GetValidInteger("Waste type (1=Household 2=Plastic 3=Market 4=Hazardous): ", 1, 4)
+        volumeCode      = GetValidInteger("Pile size (1=Small 2=Medium 3=Large): ", 1, 3)
+        daysUncollected = GetValidInteger("Days left uncollected: ", 0, 60)
+        nearDrain       = GetYesNo("Is it in or near a drain/stream? (Y/N): ")
+        nearPublicPlace = GetYesNo("Is it near a school, market or health centre? (Y/N): ")
+
+        score    = CalculatePriorityScore(wasteType, volumeCode, daysUncollected,
+                                          nearDrain, nearPublicPlace, rainySeason)
+        priority = ClassifyPriority(score, wasteType)
+        action   = RecommendAction(priority, wasteType)
+
+        CALL DisplayReport(reportID, community, score, priority, action)
+
+        // DECISION: count each priority level
+        IF priority = "URGENT" THEN
+            urgentCount = urgentCount + 1
+        ELSE IF priority = "HIGH" THEN
+            highCount = highCount + 1
+        ELSE
+            routineCount = routineCount + 1
+        END IF
+
+        totalUnits = totalUnits + GetLoadUnits(volumeCode)
+        totalDays  = totalDays + daysUncollected
+    END FOR
+
+    CALL GenerateDailySummary(numReports, urgentCount, highCount, routineCount,
+                              totalUnits, totalDays)
+END MODULE
+
+
+// ---------------------------------------------------------------
+// MODULE 2: INPUT VALIDATION (repeats until a valid value is typed)
+// ---------------------------------------------------------------
+FUNCTION GetValidInteger(prompt, minValue, maxValue) RETURNS Integer
+    DECLARE value AS Integer
+    DISPLAY prompt
+    INPUT value
+    WHILE value < minValue OR value > maxValue
+        DISPLAY "Error: enter a number from ", minValue, " to ", maxValue, "."
+        INPUT value
+    END WHILE
+    RETURN value
+END FUNCTION
+
+FUNCTION GetYesNo(prompt) RETURNS Boolean
+    DECLARE answer AS String
+    DISPLAY prompt
+    INPUT answer
+    WHILE answer <> "Y" AND answer <> "N"
+        DISPLAY "Error: please type Y or N."
+        INPUT answer
+    END WHILE
+    RETURN (answer = "Y")
+END FUNCTION
+
+
+// ---------------------------------------------------------------
+// MODULE 3: SEASON CHECK (Boolean logic)
+// ---------------------------------------------------------------
+FUNCTION IsRainySeason(month) RETURNS Boolean
+    RETURN (month >= RAINY_START AND month <= RAINY_END)
+END FUNCTION
+
+
+// ---------------------------------------------------------------
+// MODULE 4: PRIORITY SCORE (adds points for each danger sign)
+// ---------------------------------------------------------------
+FUNCTION CalculatePriorityScore(wasteType, volumeCode, daysUncollected,
+                                nearDrain, nearPublicPlace, rainySeason) RETURNS Integer
+    DECLARE score AS Integer = 0
+
+    // How long it has been left
+    IF daysUncollected >= CRITICAL_DAYS THEN
+        score = score + 3
+    ELSE IF daysUncollected >= WARNING_DAYS THEN
+        score = score + 2
+    END IF
+
+    // How big the pile is
+    IF volumeCode = 3 THEN
+        score = score + 2
+    ELSE IF volumeCode = 2 THEN
+        score = score + 1
+    END IF
+
+    // Where it is
+    IF nearDrain = TRUE THEN
+        score = score + 2                 // can block drains and cause flooding
+    END IF
+    IF nearPublicPlace = TRUE THEN
+        score = score + 2                 // many people exposed to disease
+    END IF
+
+    // What it is
+    IF wasteType = 4 THEN
+        score = score + 3                 // hazardous: medical or chemical
+    END IF
+
+    // Combined condition (Boolean AND)
+    IF rainySeason = TRUE AND nearDrain = TRUE THEN
+        score = score + 1                 // extra flood risk in the rains
+    END IF
+
+    RETURN score                          // lowest 0, highest 13
+END FUNCTION
+
+
+// ---------------------------------------------------------------
+// MODULE 5: CLASSIFY PRIORITY
+// ---------------------------------------------------------------
+FUNCTION ClassifyPriority(score, wasteType) RETURNS String
+    IF wasteType = 4 THEN
+        RETURN "URGENT"                   // safety rule: hazardous is always urgent
+    ELSE IF score >= URGENT_SCORE THEN
+        RETURN "URGENT"
+    ELSE IF score >= HIGH_SCORE THEN
+        RETURN "HIGH"
+    ELSE
+        RETURN "ROUTINE"
+    END IF
+END FUNCTION
+
+
+// ---------------------------------------------------------------
+// MODULE 6: RECOMMEND ACTION
+// ---------------------------------------------------------------
+FUNCTION RecommendAction(priority, wasteType) RETURNS String
+    DECLARE action AS String
+
+    SELECT CASE priority
+        CASE "URGENT":
+            action = "Send truck within 24 hours and alert ward councillor."
+        CASE "HIGH":
+            action = "Collect within 3 days."
+        CASE "ROUTINE":
+            action = "Add to next weekly collection round."
+    END SELECT
+
+    // Extra advice based on waste type (nested decision)
+    IF wasteType = 2 THEN
+        action = action + " Separate plastics for recycling."
+    ELSE IF wasteType = 3 THEN
+        action = action + " Send organic waste for composting."
+    ELSE IF wasteType = 4 THEN
+        action = action + " Crew must wear protective gear."
+    END IF
+
+    RETURN action
+END FUNCTION
+
+
+// ---------------------------------------------------------------
+// MODULE 7: LOAD UNITS (used to plan trucks)
+// ---------------------------------------------------------------
+FUNCTION GetLoadUnits(volumeCode) RETURNS Integer
+    IF volumeCode = 1 THEN
+        RETURN SMALL_UNITS
+    ELSE IF volumeCode = 2 THEN
+        RETURN MEDIUM_UNITS
+    ELSE
+        RETURN LARGE_UNITS
+    END IF
+END FUNCTION
+
+
+// ---------------------------------------------------------------
+// MODULE 8: OUTPUT - ONE REPORT
+// ---------------------------------------------------------------
+MODULE DisplayReport(reportID, community, score, priority, action)
+    DISPLAY "Report    : ", reportID, " - ", community
+    DISPLAY "Score     : ", score, " / 13"
+    DISPLAY "Priority  : ", priority
+    DISPLAY "Action    : ", action
+END MODULE
+
+
+// ---------------------------------------------------------------
+// MODULE 9: OUTPUT - DAILY SUMMARY FOR THE COUNCIL
+// ---------------------------------------------------------------
+MODULE GenerateDailySummary(numReports, urgentCount, highCount, routineCount,
+                            totalUnits, totalDays)
+    DECLARE trucksNeeded AS Integer
+    DECLARE avgDays      AS Real
+
+    trucksNeeded = CEILING(totalUnits / TRUCK_CAPACITY)   // round up
+    avgDays      = totalDays / numReports
+
+    DISPLAY "=== DAILY SUMMARY ==="
+    DISPLAY "Reports received      : ", numReports
+    DISPLAY "URGENT                : ", urgentCount,  " (", ROUND(urgentCount  / numReports * 100, 1), "%)"
+    DISPLAY "HIGH                  : ", highCount,    " (", ROUND(highCount    / numReports * 100, 1), "%)"
+    DISPLAY "ROUTINE               : ", routineCount, " (", ROUND(routineCount / numReports * 100, 1), "%)"
+    DISPLAY "Total load units      : ", totalUnits
+    DISPLAY "Truck trips needed    : ", trucksNeeded
+    DISPLAY "Avg days uncollected  : ", ROUND(avgDays, 1)
+
+    IF urgentCount > 0 THEN
+        DISPLAY "WARNING: ", urgentCount, " site(s) need collection within 24 hours."
+    END IF
+END MODULE

@@ -3,7 +3,7 @@
 PROG101 – Principles of Programming Logic and Design | Individual Assignment 1
 Limkokwing University of Creative Technology, Sierra Leone – Semester 01 (September 2026 – January 2027)
 
-Student: Bernard Nicholas Momoh  Student ID: `905003449`  
+Student: Bernard Nicholas Momoh  Student ID: `905006513`  
 
 ---
 
